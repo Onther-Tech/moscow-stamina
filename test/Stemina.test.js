@@ -56,16 +56,12 @@ contract("Stamina", async (accounts) => {
       await stamina.deposit(delegatee, { from, value: etherAmount });
     });
 
-    it("can request withdrawal", async () => {
-      await stamina.requestWithdrawal(delegatee, etherAmount, { from });
-      (await stamina.getTotalDeposit(delegatee)).should.be.bignumber.equal(0);
-      (await stamina.getDeposit(from, delegatee)).should.be.bignumber.equal(0);
-    });
-
     it("can withdraw Ether", async () => {
       const checkF = await checkBalance(from);
-      await stamina.withdrawPayments({ from });
+      await stamina.withdraw(delegatee, etherAmount, { from });
       await checkF(etherAmount, gasFee);
+      (await stamina.getTotalDeposit(delegatee)).should.be.bignumber.equal(0);
+      (await stamina.getDeposit(from, delegatee)).should.be.bignumber.equal(0);
     });
   });
 
@@ -87,6 +83,10 @@ contract("Stamina", async (accounts) => {
       (await stamina.getBalance(delegatee)).should.be.bignumber.equal(totalDeposit);
     });
 
+    it("should not be subtracted more than balance", async () => {
+      await expectThrow(stamina.subtractStamina(delegatee, totalDeposit.plus(1)));
+    });
+
     it("should be subtracted", async () => {
       await stamina.subtractStamina(delegatee, 1);
 
@@ -104,12 +104,6 @@ contract("Stamina", async (accounts) => {
 
       (await stamina.getBalance(delegatee)).should.be.bignumber.equal(totalDeposit);
     });
-
-    it("only owner can control balance", async () => {
-      await expectThrow(stamina.resetStamina(delegatee, { from }));
-      await expectThrow(stamina.addStamina(delegatee, 1, { from }));
-      await expectThrow(stamina.subtractStamina(delegatee, 1, { from }));
-    })
   });
 });
 

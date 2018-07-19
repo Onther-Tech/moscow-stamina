@@ -1,130 +1,153 @@
 pragma solidity ^0.4.24;
 
-import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "openzeppelin-solidity/contracts/ownership/NoOwner.sol";
-import "openzeppelin-solidity/contracts/payment/PullPayment.sol";
-
-contract Stamina is NoOwner, PullPayment {
-  using SafeMath for *;
-
+contract Stamina {
   /**
    * Internal States
    */
   // delegatee of `from` account
   // `from` => `delegatee`
-  mapping (address => address) _delegatee;
+  mapping (address => address) public _delegatee;
 
   // Stamina balance of delegatee
   // `delegatee` => `balance`
-  mapping (address => uint256) _balance;
+  mapping (address => uint) public _balance;
 
   // total deposit of delegatee
   // `delegatee` => `total deposit`
-  mapping (address => uint256) _total_deposit;
+  mapping (address => uint) public _total_deposit;
 
   // deposit of delegatee
   // `depositor` => `delegatee` => `deposit`
-  mapping (address => mapping (address => uint256)) _deposit;
+  mapping (address => mapping (address => uint)) public _deposit;
+
+  uint public t = 0xdead;
+
+  bool public initialized;
 
   /**
    * Public States
    */
-  uint256 public constant minDeposit = 0.1 ether;
+  uint public MIN_DEPOSIT;
 
   /**
    * Modifiers
    */
-  modifier onlyChainOrOwner() {
-    require(msg.sender == owner || msg.sender == address(0));
+  modifier onlyChain() {
+    // TODO: uncomment below
+    // require(msg.sender == address(0));
     _;
   }
 
   /**
    * Events
    */
-  event Deposit(address indexed _depositor, address indexed delegatee, uint256 _amount);
-  event WithdrawalRequested(address indexed _depositor, address indexed delegatee, uint256 _amount);
-  event DelegateeChanged(address _from, address _oldDelegatee, address _newDelegatee);
+  event Deposited(address indexed depositor, address indexed delegatee, uint amount);
+  event Withdrawal(address indexed depositor, address indexed delegatee, uint amount);
+  event DelegateeChanged(address from, address oldDelegatee, address newDelegatee);
+
+  /**
+   * Init
+   */
+  function init(uint minDeposit) external {
+    require(!initialized);
+
+    MIN_DEPOSIT = minDeposit;
+
+    initialized = true;
+  }
 
   /**
    * Getters
    */
-  function getDelegatee(address _from) public view returns (address) {
-    return _delegatee[_from];
+  function getDelegatee(address from) public view returns (address) {
+    return _delegatee[from];
   }
 
-  function getBalance(address _addr) public view returns (uint) {
-    return _balance[_addr];
+  function getBalance(address addr) public view returns (uint) {
+    return _balance[addr];
   }
 
-  function getTotalDeposit(address _delegatee) public view returns (uint) {
-    return _total_deposit[_delegatee];
+  function getTotalDeposit(address delegatee) public view returns (uint) {
+    return _total_deposit[delegatee];
   }
 
-  function getDeposit(address _depositor, address _delegatee) public view returns (uint) {
-    return _deposit[_depositor][_delegatee];
+  function getDeposit(address depositor, address delegatee) public view returns (uint) {
+    return _deposit[depositor][delegatee];
   }
 
   /**
    * Setters and External functions
    */
   /// @notice change current delegatee
-  function setDelegatee(address _newDelegatee) external returns (bool) {
+  function setDelegatee(address newDelegatee) external returns (bool) {
     address oldDelegatee = _delegatee[msg.sender];
 
-    _delegatee[msg.sender] = _newDelegatee;
-    
-    emit DelegateeChanged(msg.sender, oldDelegatee, _newDelegatee);
+    _delegatee[msg.sender] = newDelegatee;
+
+    emit DelegateeChanged(msg.sender, oldDelegatee, newDelegatee);
     return true;
   }
 
   /// @notice deposit Ether to delegatee
-  function deposit(address _delegatee) external payable returns (bool) {
-    require(msg.value >= minDeposit);
+  function deposit(address delegatee) external payable returns (bool) {
+    require(msg.value >= MIN_DEPOSIT);
 
-    _total_deposit[_delegatee] = _total_deposit[_delegatee].add(msg.value);
-    _deposit[msg.sender][_delegatee] = _deposit[msg.sender][_delegatee].add(msg.value);
+    uint dTotalDeposit = _total_deposit[delegatee];
+    uint fDeposit = _deposit[msg.sender][delegatee];
 
-    emit Deposit(msg.sender, _delegatee, msg.value);
+    require(dTotalDeposit + msg.value > dTotalDeposit);
+    require(fDeposit + msg.value > fDeposit);
+
+    _total_deposit[delegatee] = dTotalDeposit + msg.value;
+    _deposit[msg.sender][delegatee] = fDeposit + msg.value;
+
+    emit Deposited(msg.sender, delegatee, msg.value);
     return true;
   }
 
   /// @notice request to withdraw Ether from delegatee. it store Ether to Escrow contract.
   ///         later `withdrawPayments` transfers Ether from Escrow to the depositor
-  function requestWithdrawal(address _delegatee, uint _amount) external returns (bool) {
-    uint fDeposit = _deposit[msg.sender][_delegatee];
+  function withdraw(address delegatee, uint amount) external returns (bool) {
+    uint dTotalDeposit = _total_deposit[delegatee];
+    uint fDeposit = _deposit[msg.sender][delegatee];
 
-    _total_deposit[_delegatee] = _total_deposit[_delegatee].sub(_amount);
-    _deposit[msg.sender][_delegatee] = fDeposit.sub(_amount);
-    asyncTransfer(msg.sender, _amount);
+    require(dTotalDeposit - amount < dTotalDeposit);
+    require(fDeposit - amount < fDeposit);
 
-    emit WithdrawalRequested(msg.sender, _delegatee, _amount);
+    _total_deposit[delegatee] = dTotalDeposit - amount;
+    _deposit[msg.sender][delegatee] = fDeposit - amount;
+
+    msg.sender.transfer(amount);
+
+    emit Withdrawal(msg.sender, delegatee, amount);
     return true;
   }
 
   /// @notice reset stamina up to total deposit of delegatee
-  function resetStamina(address _delegatee) external onlyChainOrOwner {
-    _balance[_delegatee] = _total_deposit[_delegatee];
+  function resetStamina(address delegatee) external onlyChain {
+    _balance[delegatee] = _total_deposit[delegatee];
   }
 
   /// @notice add stamina of delegatee. The upper bound of stamina is total deposit of delegatee.
-  function addStamina(address _delegatee, uint _amount) external onlyChainOrOwner returns (bool) {
-    uint dTotalDeposit = _total_deposit[_delegatee];
-    uint targetBalance = _balance[_delegatee].add(_amount);
+  function addStamina(address delegatee, uint amount) external onlyChain returns (bool) {
+    uint dTotalDeposit = _total_deposit[delegatee];
+    uint dBalance = _balance[delegatee];
 
-    if (targetBalance > dTotalDeposit) _balance[_delegatee] = dTotalDeposit;
-    else _balance[_delegatee] = targetBalance;
+    require(dBalance + amount > dBalance);
+    uint targetBalance = dBalance + amount;
+
+    if (targetBalance > dTotalDeposit) _balance[delegatee] = dTotalDeposit;
+    else _balance[delegatee] = targetBalance;
 
     return true;
   }
 
   /// @notice subtracte stamina of delegatee.
-  function subtractStamina(address _delegatee, uint _amount) external onlyChainOrOwner returns (bool) {
-    uint dBalance = _balance[_delegatee];
+  function subtractStamina(address delegatee, uint amount) external onlyChain returns (bool) {
+    uint dBalance = _balance[delegatee];
 
-    _balance[_delegatee] = dBalance.sub(_amount);
+    require(dBalance - amount < dBalance);
+    _balance[delegatee] = dBalance - amount;
     return true;
   }
-
-
 }
