@@ -1,0 +1,38 @@
+{
+  "name": "moscow-stamina",
+  "version": "1.0.0",
+  "description": "",
+  "main": "truffle-config.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "truffle test ./test/Stamina.test.js",
+    "coverage": "solidity-coverage"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Onther-Tech/moscow-stamina.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Onther-Tech/moscow-stamina/issues"
+  },
+  "homepage": "https://github.com/Onther-Tech/moscow-stamina#readme",
+  "dependencies": {
+    "bluebird": "^3.5.1",
+    "chai": "^4.1.2",
+    "chai-as-promised": "^7.1.1",
+    "chai-bignumber": "^2.0.2",
+    "ethereumjs-util": "^5.2.0",
+    "ethjs-abi": "^0.2.1",
+    "lodash": "^4.17.10",
+    "openzeppelin-solidity": "^1.11.0",
+    "web3-utils": "^1.0.0-beta.34"
+  },
+  "devDependencies": {
+    "solidity-coverage": "^0.5.5"
+  }
+}
