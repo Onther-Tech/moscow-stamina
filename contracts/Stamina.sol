@@ -71,12 +71,14 @@ contract Stamina is NoOwner, PullPayment {
   /// @notice change current delegatee
   function setDelegatee(address _newDelegatee) external returns (bool) {
     address oldDelegatee = _delegatee[msg.sender];
+
     _delegatee[msg.sender] = _newDelegatee;
+    
     emit DelegateeChanged(msg.sender, oldDelegatee, _newDelegatee);
     return true;
   }
 
-  /// @notice change current delegatee
+  /// @notice deposit Ether to delegatee
   function deposit(address _delegatee) external payable returns (bool) {
     require(msg.value >= minDeposit);
 
@@ -87,7 +89,8 @@ contract Stamina is NoOwner, PullPayment {
     return true;
   }
 
-  /// @notice change current delegatee
+  /// @notice request to withdraw Ether from delegatee. it store Ether to Escrow contract.
+  ///         later `withdrawPayments` transfers Ether from Escrow to the depositor
   function requestWithdrawal(address _delegatee, uint _amount) external returns (bool) {
     uint fDeposit = _deposit[msg.sender][_delegatee];
 
@@ -99,10 +102,12 @@ contract Stamina is NoOwner, PullPayment {
     return true;
   }
 
+  /// @notice reset stamina up to total deposit of delegatee
   function resetStamina(address _delegatee) external onlyChainOrOwner {
     _balance[_delegatee] = _total_deposit[_delegatee];
   }
 
+  /// @notice add stamina of delegatee. The upper bound of stamina is total deposit of delegatee.
   function addStamina(address _delegatee, uint _amount) external onlyChainOrOwner returns (bool) {
     uint dTotalDeposit = _total_deposit[_delegatee];
     uint targetBalance = _balance[_delegatee].add(_amount);
@@ -113,6 +118,7 @@ contract Stamina is NoOwner, PullPayment {
     return true;
   }
 
+  /// @notice subtracte stamina of delegatee.
   function subtractStamina(address _delegatee, uint _amount) external onlyChainOrOwner returns (bool) {
     uint dBalance = _balance[_delegatee];
 
