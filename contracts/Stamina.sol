@@ -99,11 +99,11 @@ contract Stamina is NoOwner, PullPayment {
     return true;
   }
 
-  function resetBalance(address _delegatee) external onlyChainOrOwner {
+  function resetStamina(address _delegatee) external onlyChainOrOwner {
     _balance[_delegatee] = _total_deposit[_delegatee];
   }
 
-  function addBalance(address _delegatee, uint _amount) external onlyChainOrOwner returns (bool) {
+  function addStamina(address _delegatee, uint _amount) external onlyChainOrOwner returns (bool) {
     uint dTotalDeposit = _total_deposit[_delegatee];
     uint targetBalance = _balance[_delegatee].add(_amount);
 
@@ -113,7 +113,7 @@ contract Stamina is NoOwner, PullPayment {
     return true;
   }
 
-  function subtractBalance(address _delegatee, uint _amount) external onlyChainOrOwner returns (bool) {
+  function subtractStamina(address _delegatee, uint _amount) external onlyChainOrOwner returns (bool) {
     uint dBalance = _balance[_delegatee];
 
     _balance[_delegatee] = dBalance.sub(_amount);

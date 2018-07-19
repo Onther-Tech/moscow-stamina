@@ -82,33 +82,33 @@ contract("Stamina", async (accounts) => {
     });
 
     it("should be equal to total deposit when it reset", async () => {
-      await stamina.resetBalance(delegatee);
+      await stamina.resetStamina(delegatee);
 
       (await stamina.getBalance(delegatee)).should.be.bignumber.equal(totalDeposit);
     });
 
     it("should be subtracted", async () => {
-      await stamina.subtractBalance(delegatee, 1);
+      await stamina.subtractStamina(delegatee, 1);
 
       (await stamina.getBalance(delegatee)).should.be.bignumber.equal(totalDeposit.sub(1));
     });
 
     it("should be added", async () => {
-      await stamina.addBalance(delegatee, 1);
+      await stamina.addStamina(delegatee, 1);
 
       (await stamina.getBalance(delegatee)).should.be.bignumber.equal(totalDeposit);
     });
 
     it("should not be added more than total deposit", async () => {
-      await stamina.addBalance(delegatee, 1);
+      await stamina.addStamina(delegatee, 1);
 
       (await stamina.getBalance(delegatee)).should.be.bignumber.equal(totalDeposit);
     });
 
     it("only owner can control balance", async () => {
-      await expectThrow(stamina.resetBalance(delegatee, { from }));
-      await expectThrow(stamina.addBalance(delegatee, 1, { from }));
-      await expectThrow(stamina.subtractBalance(delegatee, 1, { from }));
+      await expectThrow(stamina.resetStamina(delegatee, { from }));
+      await expectThrow(stamina.addStamina(delegatee, 1, { from }));
+      await expectThrow(stamina.subtractStamina(delegatee, 1, { from }));
     })
   });
 });
