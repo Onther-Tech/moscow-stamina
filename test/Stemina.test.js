@@ -12,56 +12,58 @@ contract("Stamina", async (accounts) => {
 
   const [
     owner,
-    from,
+    depositor,
+    delegater,
     delegatee,
   ] = accounts;
 
-  const etherAmount = 1e18;
-  const gasFee = 1e16;
+  const etherAmount = new BigNumber(1e18);
+  const gasFee = new BigNumber(1e16);
+  const minDeposit = new BigNumber(1e17);
 
   before(async () => {
     stamina = await Stamina.new();
+    await stamina.init(minDeposit);
   });
 
   describe("delegatee", () => {
     it("can set delegatee to anyone", async () => {
-      await stamina.setDelegatee(owner, { from });
-      (await stamina.getDelegatee(from)).should.be.equal(owner);
+      await stamina.setDelegatee(owner, { from: delegatee });
+      (await stamina.getDelegatee(owner)).should.be.equal(delegatee);
 
-      await stamina.setDelegatee(delegatee, { from });
-      (await stamina.getDelegatee(from)).should.be.equal(delegatee);
+      await stamina.setDelegatee(delegater, { from: delegatee });
+      (await stamina.getDelegatee(delegater)).should.be.equal(delegatee);
     });
   });
 
   describe("deposit", () => {
-    it("cannot deposit less than 0.1 ETH", async () => {
-      await expectThrow(stamina.deposit(delegatee, { from, value: 0.999e17 }));
+    it("cannot deposit less than MIN_DEPOSIT", async () => {
+      await expectThrow(stamina.deposit(delegatee, { from: depositor, value: minDeposit.minus(1) }));
 
       (await stamina.getTotalDeposit(delegatee)).should.be.bignumber.equal(0);
-      (await stamina.getDeposit(from, delegatee)).should.be.bignumber.equal(0);
-
+      (await stamina.getDeposit(depositor, delegatee)).should.be.bignumber.equal(0);
     });
 
     it("can deposit Ether equal or more than 0.1 ETH", async () => {
-      await stamina.deposit(delegatee, { from, value: etherAmount });
+      await stamina.deposit(delegatee, { from: depositor, value: etherAmount });
 
       (await stamina.getTotalDeposit(delegatee)).should.be.bignumber.equal(etherAmount);
-      (await stamina.getDeposit(from, delegatee)).should.be.bignumber.equal(etherAmount);
+      (await stamina.getDeposit(depositor, delegatee)).should.be.bignumber.equal(etherAmount);
     });
   });
 
   describe("withdraw", () => {
     after(async () => {
       // re-deposit
-      await stamina.deposit(delegatee, { from, value: etherAmount });
+      await stamina.deposit(delegatee, { delegater, value: etherAmount });
     });
 
     it("can withdraw Ether", async () => {
-      const checkF = await checkBalance(from);
-      await stamina.withdraw(delegatee, etherAmount, { from });
+      const checkF = await checkBalance(depositor);
+      await stamina.withdraw(delegatee, etherAmount, { from: depositor });
       await checkF(etherAmount, gasFee);
       (await stamina.getTotalDeposit(delegatee)).should.be.bignumber.equal(0);
-      (await stamina.getDeposit(from, delegatee)).should.be.bignumber.equal(0);
+      (await stamina.getDeposit(depositor, delegatee)).should.be.bignumber.equal(0);
     });
   });
 
@@ -74,13 +76,13 @@ contract("Stamina", async (accounts) => {
     });
 
     it("should be 0 at initial", async () => {
-      (await stamina.getBalance(delegatee)).should.be.bignumber.equal(0);
+      (await stamina.getStamina(delegatee)).should.be.bignumber.equal(0);
     });
 
     it("should be equal to total deposit when it reset", async () => {
       await stamina.resetStamina(delegatee);
 
-      (await stamina.getBalance(delegatee)).should.be.bignumber.equal(totalDeposit);
+      (await stamina.getStamina(delegatee)).should.be.bignumber.equal(totalDeposit);
     });
 
     it("should not be subtracted more than balance", async () => {
@@ -90,19 +92,19 @@ contract("Stamina", async (accounts) => {
     it("should be subtracted", async () => {
       await stamina.subtractStamina(delegatee, 1);
 
-      (await stamina.getBalance(delegatee)).should.be.bignumber.equal(totalDeposit.sub(1));
+      (await stamina.getStamina(delegatee)).should.be.bignumber.equal(totalDeposit.sub(1));
     });
 
     it("should be added", async () => {
       await stamina.addStamina(delegatee, 1);
 
-      (await stamina.getBalance(delegatee)).should.be.bignumber.equal(totalDeposit);
+      (await stamina.getStamina(delegatee)).should.be.bignumber.equal(totalDeposit);
     });
 
     it("should not be added more than total deposit", async () => {
       await stamina.addStamina(delegatee, 1);
 
-      (await stamina.getBalance(delegatee)).should.be.bignumber.equal(totalDeposit);
+      (await stamina.getStamina(delegatee)).should.be.bignumber.equal(totalDeposit);
     });
   });
 });
