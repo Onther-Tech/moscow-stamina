@@ -6,19 +6,19 @@ contract Stamina {
    */
   // delegatee of `from` account
   // `from` => `delegatee`
-  mapping (address => address) public _delegatee;
+  mapping (address => address) _delegatee;
 
   // Stamina balance of delegatee
   // `delegatee` => `balance`
-  mapping (address => uint) public _stamina;
+  mapping (address => uint) _stamina;
 
   // total deposit of delegatee
   // `delegatee` => `total deposit`
-  mapping (address => uint) public _total_deposit;
+  mapping (address => uint) _total_deposit;
 
   // deposit of delegatee
   // `depositor` => `delegatee` => `deposit`
-  mapping (address => mapping (address => uint)) public _deposit;
+  mapping (address => mapping (address => uint)) _deposit;
 
   uint public t = 0xdead;
 
