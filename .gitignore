@@ -63,3 +63,6 @@ typings/
 # ethereum related
 coverage.json
 build
+
+# ganache-cli
+.node*
