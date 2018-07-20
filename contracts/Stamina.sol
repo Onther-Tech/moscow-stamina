@@ -10,7 +10,7 @@ contract Stamina {
 
   // Stamina balance of delegatee
   // `delegatee` => `balance`
-  mapping (address => uint) public _balance;
+  mapping (address => uint) public _stamina;
 
   // total deposit of delegatee
   // `delegatee` => `total deposit`
@@ -43,7 +43,7 @@ contract Stamina {
    */
   event Deposited(address indexed depositor, address indexed delegatee, uint amount);
   event Withdrawal(address indexed depositor, address indexed delegatee, uint amount);
-  event DelegateeChanged(address from, address oldDelegatee, address newDelegatee);
+  event DelegateeChanged(address delegater, address oldDelegatee, address newDelegatee);
 
   /**
    * Init
@@ -59,12 +59,12 @@ contract Stamina {
   /**
    * Getters
    */
-  function getDelegatee(address from) public view returns (address) {
-    return _delegatee[from];
+  function getDelegatee(address delegater) public view returns (address) {
+    return _delegatee[delegater];
   }
 
-  function getBalance(address addr) public view returns (uint) {
-    return _balance[addr];
+  function getStamina(address addr) public view returns (uint) {
+    return _stamina[addr];
   }
 
   function getTotalDeposit(address delegatee) public view returns (uint) {
@@ -78,13 +78,13 @@ contract Stamina {
   /**
    * Setters and External functions
    */
-  /// @notice change current delegatee
-  function setDelegatee(address newDelegatee) external returns (bool) {
-    address oldDelegatee = _delegatee[msg.sender];
+  /// @notice set `msg.sender` as delegatee of `delegater`
+  function setDelegatee(address delegater) external returns (bool) {
+    address oldDelegatee = _delegatee[delegater];
 
-    _delegatee[msg.sender] = newDelegatee;
+    _delegatee[delegater] = msg.sender;
 
-    emit DelegateeChanged(msg.sender, oldDelegatee, newDelegatee);
+    emit DelegateeChanged(delegater, oldDelegatee, msg.sender);
     return true;
   }
 
@@ -125,29 +125,29 @@ contract Stamina {
 
   /// @notice reset stamina up to total deposit of delegatee
   function resetStamina(address delegatee) external onlyChain {
-    _balance[delegatee] = _total_deposit[delegatee];
+    _stamina[delegatee] = _total_deposit[delegatee];
   }
 
   /// @notice add stamina of delegatee. The upper bound of stamina is total deposit of delegatee.
   function addStamina(address delegatee, uint amount) external onlyChain returns (bool) {
     uint dTotalDeposit = _total_deposit[delegatee];
-    uint dBalance = _balance[delegatee];
+    uint dBalance = _stamina[delegatee];
 
     require(dBalance + amount > dBalance);
     uint targetBalance = dBalance + amount;
 
-    if (targetBalance > dTotalDeposit) _balance[delegatee] = dTotalDeposit;
-    else _balance[delegatee] = targetBalance;
+    if (targetBalance > dTotalDeposit) _stamina[delegatee] = dTotalDeposit;
+    else _stamina[delegatee] = targetBalance;
 
     return true;
   }
 
   /// @notice subtracte stamina of delegatee.
   function subtractStamina(address delegatee, uint amount) external onlyChain returns (bool) {
-    uint dBalance = _balance[delegatee];
+    uint dBalance = _stamina[delegatee];
 
     require(dBalance - amount < dBalance);
-    _balance[delegatee] = dBalance - amount;
+    _stamina[delegatee] = dBalance - amount;
     return true;
   }
 }
