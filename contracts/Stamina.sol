@@ -42,7 +42,7 @@ contract Stamina {
    * Events
    */
   event Deposited(address indexed depositor, address indexed delegatee, uint amount);
-  event Withdrawal(address indexed depositor, address indexed delegatee, uint amount);
+  event Withdrawn(address indexed depositor, address indexed delegatee, uint amount);
   event DelegateeChanged(address delegater, address oldDelegatee, address newDelegatee);
 
   /**
@@ -119,7 +119,7 @@ contract Stamina {
 
     msg.sender.transfer(amount);
 
-    emit Withdrawal(msg.sender, delegatee, amount);
+    emit Withdrawn(msg.sender, delegatee, amount);
     return true;
   }
 
