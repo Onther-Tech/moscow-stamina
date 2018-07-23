@@ -20,8 +20,6 @@ contract Stamina {
   // `depositor` => `delegatee` => `deposit`
   mapping (address => mapping (address => uint)) _deposit;
 
-  uint public t = 0xdead;
-
   bool public initialized;
 
   /**
