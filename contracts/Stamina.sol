@@ -1,6 +1,16 @@
 pragma solidity ^0.4.24;
 
 contract Stamina {
+  // Exit handles withdrawal request
+  struct Exit {
+    uint128 amount;
+    uint128 requestBlockNumber;
+
+    address depositor;
+
+    bool processed;
+  }
+
   /**
    * Internal States
    */
@@ -20,19 +30,33 @@ contract Stamina {
   // `depositor` => `delegatee` => `deposit`
   mapping (address => mapping (address => uint)) _deposit;
 
-  bool public initialized;
+  // last recovery block of delegatee
+  mapping (address => uint256) _last_recovery_block;
+
+  // depositor => [index] => Exit
+  mapping (address => Exit[]) _exits;
+  mapping (address => uint256) _num_exits;
+  mapping (address => uint256) _last_processed_exit;
 
   /**
    * Public States
    */
+  bool public initialized;
+
   uint public MIN_DEPOSIT;
+  uint public RECOVER_EPOCH_LENGTH; // stamina is recovered when block number % RECOVER_DELAY == 0
+  uint public EXIT_DELAY;           // Refund will be made EXIT_DELAY blocks after exitor request exit.
+                                    // RECOVER_EPOCH_LENGTH * 2 < EXIT_DELAY
+
+
+  bool public produciton = true; // if the contract is inserted into
+                                 // genesis block, it will be false
 
   /**
    * Modifiers
    */
   modifier onlyChain() {
-    // TODO: uncomment below
-    // require(msg.sender == address(0));
+    require(!produciton || msg.sender == address(0));
     _;
   }
 
@@ -46,10 +70,18 @@ contract Stamina {
   /**
    * Init
    */
-  function init(uint minDeposit) external {
+  function init(uint minDeposit, uint recoveryEpochLength, uint exitDelay) external {
     require(!initialized);
 
+    require(minDeposit > 0);
+    require(recoveryEpochLength > 0);
+    require(exitDelay > 0);
+
+    require(recoveryEpochLength * 2 < exitDelay);
+
     MIN_DEPOSIT = minDeposit;
+    RECOVER_EPOCH_LENGTH = recoveryEpochLength;
+    EXIT_DELAY = exitDelay;
 
     initialized = true;
   }
@@ -71,6 +103,10 @@ contract Stamina {
 
   function getDeposit(address depositor, address delegatee) public view returns (uint) {
     return _deposit[depositor][delegatee];
+  }
+
+  function getNumExits(address depositor) public view returns (uint) {
+    return _num_exits[depositor];
   }
 
   /**
@@ -98,6 +134,7 @@ contract Stamina {
 
     _total_deposit[delegatee] = dTotalDeposit + msg.value;
     _deposit[msg.sender][delegatee] = fDeposit + msg.value;
+    _stamina[delegatee] += msg.value;
 
     emit Deposited(msg.sender, delegatee, msg.value);
     return true;
