@@ -7,7 +7,8 @@
     "test": "test"
   },
   "scripts": {
-    "test": "truffle test ./test/Stamina.test.js",
+    "test": "truffle test",
+    "test:gas": "GAS_REPORTER=true truffle test",
     "coverage": "solidity-coverage"
   },
   "repository": {
@@ -33,6 +34,7 @@
     "web3-utils": "^1.0.0-beta.34"
   },
   "devDependencies": {
+    "eth-gas-reporter": "^0.1.10",
     "solidity-coverage": "^0.5.5"
   }
 }

@@ -1,3 +1,14 @@
+const gas_reporter = {
+  reporter: 'eth-gas-reporter',
+  reporterOptions : {
+    currency: 'USD',
+    gasPrice: 20
+  },
+};
+
+const mocha = process.env.GAS_REPORTER ? gas_reporter : {};
+
+
 module.exports = {
   networks: {
     development: {
@@ -14,6 +25,7 @@ module.exports = {
       gasPrice: 0x01      // <-- Use this low gas price
     },
   },
+  mocha,
   solc: {
     optimizer: {
       enabled: true,
