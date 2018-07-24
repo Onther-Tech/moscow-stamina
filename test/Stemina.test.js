@@ -1,3 +1,5 @@
+const Promise = require("bluebird");
+
 const {advanceToBlock, advanceBlock} = require("./helpers/advanceToBlock");
 const {expectThrow} = require("./helpers/expectThrow");
 const Stamina = artifacts.require("Stamina");
@@ -7,6 +9,7 @@ require('chai')
   .use(require('chai-bignumber')(BigNumber))
   .should();
 
+Promise.promisifyAll(web3.eth);
 
 contract("Stamina", async (accounts) => {
   let stamina;
@@ -25,6 +28,7 @@ contract("Stamina", async (accounts) => {
   const withdrawalDelay = 50;
 
   before(async () => {
+    await advanceManyBlocks(100);
     stamina = await Stamina.new();
     await stamina.init(minDeposit, recoveryEpochLength, withdrawalDelay);
   });
@@ -140,4 +144,9 @@ async function checkBalance(address) {
       );
     }
   }
+}
+
+async function advanceManyBlocks(numBlocks) {
+  const currentBlock = await web3.eth.getBlockNumberAsync();
+  return advanceToBlock(currentBlock + numBlocks);
 }
