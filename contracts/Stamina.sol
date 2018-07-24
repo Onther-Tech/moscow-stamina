@@ -72,7 +72,7 @@ contract Stamina {
   event Deposited(address indexed depositor, address indexed delegatee, uint amount);
   event DelegateeChanged(address delegator, address oldDelegatee, address newDelegatee);
   event WithdrawalRequested(address indexed depositor, address indexed delegatee, uint amount, uint requestBlockNumber, uint withdrawalIndex);
-  event Withdrawan(address indexed depositor, address indexed delegatee, uint amount, uint withdrawalIndex);
+  event Withdrawn(address indexed depositor, address indexed delegatee, uint amount, uint withdrawalIndex);
 
   /**
    * Init
@@ -268,7 +268,7 @@ contract Stamina {
 
     // tranfser ether to depositor
     msg.sender.transfer(amount);
-    emit Withdrawan(msg.sender, withdrawal.delegatee, amount, withdrawalIndex);
+    emit Withdrawn(msg.sender, withdrawal.delegatee, amount, withdrawalIndex);
 
     return true;
   }
@@ -280,8 +280,6 @@ contract Stamina {
   /// @notice Add stamina of delegatee. The upper bound of stamina is total deposit of delegatee.
   ///         addStamina is called when remaining gas is refunded. So we can recover stamina
   ///         if RECOVER_EPOCH_LENGTH blocks are passed.
-  ///
-  ///         NOTE: can use block.number here?
   function addStamina(address delegatee, uint amount) external onlyChain returns (bool) {
     // if enough blocks has passed since the last recovery, recover whole used stamina.
     if (_last_recovery_block[delegatee] + RECOVER_EPOCH_LENGTH <= block.number) {
