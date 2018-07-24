@@ -1,6 +1,7 @@
 pragma solidity ^0.4.24;
 pragma experimental ABIEncoderV2;
 
+
 contract Stamina {
   // Withdrawal handles withdrawal request
   struct Withdrawal {
@@ -219,13 +220,24 @@ contract Stamina {
 
   /// @notice Process last unprocessed withdrawal request.
   function withdraw() external returns (bool) {
+    Withdrawal[] storage withdrawals = _withdrawal[msg.sender];
+    require(withdrawals.length > 0);
+
+    uint lastWithdrawalIndex = _last_processed_withdrawal[msg.sender];
     uint withdrawalIndex;
 
-    if (_last_processed_withdrawal[msg.sender] > 0) {
-      withdrawalIndex = _last_processed_withdrawal[msg.sender] + 1;
+    if (lastWithdrawalIndex == 0 && !withdrawals[0].processed) {
+      withdrawalIndex = 0;
+    } else if (lastWithdrawalIndex == 0) { // lastWithdrawalIndex == 0 && withdrawals[0].processed
+      require(withdrawals.length >= 2);
+
+      withdrawalIndex = 1;
+    } else {
+      withdrawalIndex = lastWithdrawalIndex + 1;
     }
 
-    require(withdrawalIndex < getNumWithdrawals(msg.sender));
+    // double check out of index
+    require(withdrawalIndex < withdrawals.length);
 
     Withdrawal storage withdrawal = _withdrawal[msg.sender][withdrawalIndex];
 

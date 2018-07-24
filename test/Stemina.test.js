@@ -87,8 +87,11 @@ contract("Stamina", async (accounts) => {
   });
 
   describe("withdraw", () => {
+    const withdrawalAmount = etherAmount.div(2);
+
     it("can request withdrawal", async () => {
-      await stamina.requestWithdrawal(delegatee, etherAmount, { from: depositor });
+      await stamina.requestWithdrawal(delegatee, withdrawalAmount, { from: depositor });
+      await stamina.requestWithdrawal(delegatee, withdrawalAmount, { from: depositor });
 
       (await stamina.getTotalDeposit(delegatee)).should.be.bignumber.equal(0);
       (await stamina.getStamina(delegatee)).should.be.bignumber.equal(0);
@@ -100,15 +103,19 @@ contract("Stamina", async (accounts) => {
     });
 
     it("can withdraw in WITHDRAWAL_DELAY blocks", async () => {
-      for (let i = 0; i < withdrawalDelay + 1; i++) {
+      for (let i = 0; i < withdrawalDelay + 2; i++) {
         await advanceBlock();
       }
 
-      const checkF = await checkBalance(depositor);
-
+      const checkF1 = await checkBalance(depositor);
       await stamina.withdraw({ from: depositor });
+      await checkF1(withdrawalAmount, gasFee);
 
-      await checkF(etherAmount, gasFee);
+
+      const checkF2 = await checkBalance(depositor);
+      await stamina.withdraw({ from: depositor });
+      await checkF2(withdrawalAmount, gasFee);
+
     });
   });
 });
