@@ -1,5 +1,4 @@
 pragma solidity ^0.4.24;
-pragma experimental ABIEncoderV2;
 
 
 contract Stamina {
@@ -119,9 +118,19 @@ contract Stamina {
     return _last_recovery_block[delegatee];
   }
 
-  function getWithdrawal(address depositor, uint withdrawalIndex) public view returns (Withdrawal) {
+  function getWithdrawal(address depositor, uint withdrawalIndex)
+    public
+    view
+    returns (uint128 amount, uint128 requestBlockNumber, address delegatee, bool processed)
+  {
     require(withdrawalIndex < getNumWithdrawals(depositor));
-    return _withdrawal[depositor][withdrawalIndex];
+
+    Withdrawal memory w = _withdrawal[depositor][withdrawalIndex];
+
+    amount = w.amount;
+    requestBlockNumber = w.requestBlockNumber;
+    delegatee = w.delegatee;
+    processed = w.processed;
   }
 
   /**
