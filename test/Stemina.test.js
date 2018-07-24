@@ -1,3 +1,4 @@
+const {advanceToBlock, advanceBlock} = require("./helpers/advanceToBlock");
 const {expectThrow} = require("./helpers/expectThrow");
 const Stamina = artifacts.require("Stamina");
 
@@ -20,10 +21,12 @@ contract("Stamina", async (accounts) => {
   const etherAmount = new BigNumber(1e18);
   const gasFee = new BigNumber(1e16);
   const minDeposit = new BigNumber(1e17);
+  const recoveryEpochLength = 20;
+  const withdrawalDelay = 50;
 
   before(async () => {
     stamina = await Stamina.new();
-    await stamina.init(minDeposit);
+    await stamina.init(minDeposit, recoveryEpochLength, withdrawalDelay);
   });
 
   describe("delegatee", () => {
@@ -52,22 +55,7 @@ contract("Stamina", async (accounts) => {
     });
   });
 
-  describe("withdraw", () => {
-    after(async () => {
-      // re-deposit
-      await stamina.deposit(delegatee, { delegater, value: etherAmount });
-    });
-
-    it("can withdraw Ether", async () => {
-      const checkF = await checkBalance(depositor);
-      await stamina.withdraw(delegatee, etherAmount, { from: depositor });
-      await checkF(etherAmount, gasFee);
-      (await stamina.getTotalDeposit(delegatee)).should.be.bignumber.equal(0);
-      (await stamina.getDeposit(depositor, delegatee)).should.be.bignumber.equal(0);
-    });
-  });
-
-  describe("balance", () => {
+  describe("stamina", () => {
     let totalDeposit;
 
     before(async () => {
@@ -75,17 +63,7 @@ contract("Stamina", async (accounts) => {
       totalDeposit = await stamina.getTotalDeposit(delegatee);
     });
 
-    it("should be 0 at initial", async () => {
-      (await stamina.getStamina(delegatee)).should.be.bignumber.equal(0);
-    });
-
-    it("should be equal to total deposit when it reset", async () => {
-      await stamina.resetStamina(delegatee);
-
-      (await stamina.getStamina(delegatee)).should.be.bignumber.equal(totalDeposit);
-    });
-
-    it("should not be subtracted more than balance", async () => {
+    it("should not be subtracted more than current stamina", async () => {
       await expectThrow(stamina.subtractStamina(delegatee, totalDeposit.plus(1)));
     });
 
@@ -105,6 +83,32 @@ contract("Stamina", async (accounts) => {
       await stamina.addStamina(delegatee, 1);
 
       (await stamina.getStamina(delegatee)).should.be.bignumber.equal(totalDeposit);
+    });
+  });
+
+  describe("withdraw", () => {
+    it("can request withdrawal", async () => {
+      await stamina.requestWithdrawal(delegatee, etherAmount, { from: depositor });
+
+      (await stamina.getTotalDeposit(delegatee)).should.be.bignumber.equal(0);
+      (await stamina.getStamina(delegatee)).should.be.bignumber.equal(0);
+
+    });
+
+    it("cannot withdraw in WITHDRAWAL_DELAY blocks", async () => {
+      await expectThrow(stamina.withdraw({ from: depositor }));
+    });
+
+    it("can withdraw in WITHDRAWAL_DELAY blocks", async () => {
+      for (let i = 0; i < withdrawalDelay + 1; i++) {
+        await advanceBlock();
+      }
+
+      const checkF = await checkBalance(depositor);
+
+      await stamina.withdraw({ from: depositor });
+
+      await checkF(etherAmount, gasFee);
     });
   });
 });
