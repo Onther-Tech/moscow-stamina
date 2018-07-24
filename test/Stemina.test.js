@@ -88,7 +88,7 @@ contract("Stamina", async (accounts) => {
     });
 
     it("should not be added more than total deposit", async () => {
-      await stamina.addStamina(delegatee, addAmount);
+      await stamina.addStamina(delegatee, addAmount * 2);
 
       (await stamina.getStamina(delegatee)).should.be.bignumber.equal(totalDeposit);
     });
