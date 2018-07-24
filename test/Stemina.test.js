@@ -2,6 +2,7 @@ const Promise = require("bluebird");
 
 const {advanceToBlock, advanceBlock} = require("./helpers/advanceToBlock");
 const {expectThrow} = require("./helpers/expectThrow");
+const {inTransaction} = require("./helpers/expectEvent");
 const Stamina = artifacts.require("Stamina");
 
 const BigNumber = web3.BigNumber;
@@ -60,6 +61,9 @@ contract("Stamina", async (accounts) => {
   });
 
   describe("stamina", () => {
+    const subtractAmount = 100;
+    const addAmount = 50;
+
     let totalDeposit;
 
     before(async () => {
@@ -72,22 +76,32 @@ contract("Stamina", async (accounts) => {
     });
 
     it("should be subtracted", async () => {
-      await stamina.subtractStamina(delegatee, 1);
+      await stamina.subtractStamina(delegatee, subtractAmount);
 
-      (await stamina.getStamina(delegatee)).should.be.bignumber.equal(totalDeposit.sub(1));
+      (await stamina.getStamina(delegatee)).should.be.bignumber.equal(totalDeposit.sub(subtractAmount));
     });
 
     it("should be added", async () => {
-      await stamina.addStamina(delegatee, 1);
+      await stamina.addStamina(delegatee, addAmount);
 
-      (await stamina.getStamina(delegatee)).should.be.bignumber.equal(totalDeposit);
+      (await stamina.getStamina(delegatee)).should.be.bignumber
+        .equal(totalDeposit.sub(subtractAmount).add(addAmount));
     });
 
     it("should not be added more than total deposit", async () => {
-      await stamina.addStamina(delegatee, 1);
+      await stamina.addStamina(delegatee, addAmount);
 
       (await stamina.getStamina(delegatee)).should.be.bignumber.equal(totalDeposit);
     });
+
+    it("should be recovered whole amount after RECOVER_EPOCH_LENGTH", async () => {
+      await stamina.subtractStamina(delegatee, totalDeposit);
+
+      await advanceManyBlocks(recoveryEpochLength)
+
+      await stamina.addStamina(delegatee, 1);
+      (await stamina.getStamina(delegatee)).should.be.bignumber.equal(totalDeposit);
+    })
   });
 
   describe("withdraw", () => {

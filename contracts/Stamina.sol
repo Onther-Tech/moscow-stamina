@@ -35,6 +35,7 @@ contract Stamina {
   // depositor => [index] => Withdrawal
   mapping (address => Withdrawal[]) _withdrawal;
   mapping (address => uint256) _last_processed_withdrawal;
+  mapping (address => uint) _num_recovery;
 
   /**
    * Public States
@@ -50,6 +51,7 @@ contract Stamina {
 
   bool public development = true;   // if the contract is inserted directly into
                                     // genesis block, it will be false
+
 
   /**
    * Modifiers
@@ -118,6 +120,10 @@ contract Stamina {
     return _last_recovery_block[delegatee];
   }
 
+  function getNumRecovery(address delegatee) public view returns (uint) {
+    return _num_recovery[delegatee];
+  }
+
   function getWithdrawal(address depositor, uint withdrawalIndex)
     public
     view
@@ -162,8 +168,6 @@ contract Stamina {
   {
     require(msg.value >= MIN_DEPOSIT);
 
-    uint lastBlock = _last_recovery_block[delegatee];
-
     uint totalDeposit = _total_deposit[delegatee];
     uint deposit = _deposit[msg.sender][delegatee];
     uint stamina = _stamina[delegatee];
@@ -177,8 +181,8 @@ contract Stamina {
     _deposit[msg.sender][delegatee] = deposit + msg.value;
     _stamina[delegatee] = stamina + msg.value;
 
-    if (lastBlock == 0) {
-      lastBlock = block.number;
+    if (_last_recovery_block[delegatee] == 0) {
+      _last_recovery_block[delegatee] = block.number;
     }
 
     emit Deposited(msg.sender, delegatee, msg.value);
@@ -271,7 +275,7 @@ contract Stamina {
 
   /**
    * Stamina modification (only blockchain)
-   * No event emitted during this functions.
+   * No event emitted during these functions.
    */
   /// @notice Add stamina of delegatee. The upper bound of stamina is total deposit of delegatee.
   ///         addStamina is called when remaining gas is refunded. So we can recover stamina
@@ -279,12 +283,12 @@ contract Stamina {
   ///
   ///         NOTE: can use block.number here?
   function addStamina(address delegatee, uint amount) external onlyChain returns (bool) {
-    uint lastBlock = _last_recovery_block[delegatee];
-
-    // if enough blocks has passed, recover whole used stamina.
-    if (lastBlock + RECOVER_EPOCH_LENGTH >= block.number) {
+    // if enough blocks has passed since the last recovery, recover whole used stamina.
+    if (_last_recovery_block[delegatee] + RECOVER_EPOCH_LENGTH <= block.number) {
       _stamina[delegatee] = _total_deposit[delegatee];
       _last_recovery_block[delegatee] = block.number;
+      _num_recovery[delegatee] += 1;
+
       return true;
     }
 
