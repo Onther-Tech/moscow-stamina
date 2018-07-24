@@ -70,7 +70,7 @@ contract Stamina {
    */
   event Deposited(address indexed depositor, address indexed delegatee, uint amount);
   event DelegateeChanged(address delegator, address oldDelegatee, address newDelegatee);
-  event WithdrawalRequested(address indexed depositor, address indexed delegatee, uint amount, uint withdrawalIndex);
+  event WithdrawalRequested(address indexed depositor, address indexed delegatee, uint amount, uint requestBlockNumber, uint withdrawalIndex);
   event Withdrawan(address indexed depositor, address indexed delegatee, uint amount, uint withdrawalIndex);
 
   /**
@@ -214,7 +214,7 @@ contract Stamina {
     withdrawal.requestBlockNumber = uint128(block.number);
     withdrawal.delegatee = delegatee;
 
-    emit WithdrawalRequested(msg.sender, delegatee, amount, withdrawalIndex);
+    emit WithdrawalRequested(msg.sender, delegatee, amount, block.number, withdrawalIndex);
     return true;
   }
 
