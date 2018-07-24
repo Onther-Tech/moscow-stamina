@@ -67,7 +67,6 @@ contract("Stamina", async (accounts) => {
     let totalDeposit;
 
     before(async () => {
-      // read
       totalDeposit = await stamina.getTotalDeposit(delegatee);
     });
 
@@ -128,9 +127,9 @@ contract("Stamina", async (accounts) => {
       }
 
       for (let i = 0; i < numRequests; i++) {
-        const checkF = await checkBalance(depositor);
+        const checker = await checkBalance(depositor);
         await stamina.withdraw({ from: depositor });
-        await checkF(withdrawalAmount, gasFee);
+        await checker(withdrawalAmount, gasFee);
       }
     });
   });
@@ -141,10 +140,10 @@ async function checkBalance(address) {
   const balance1 = await web3.eth.getBalance(address);
 
   return async function(increase, delta = 0) {
-    const balance8 = await web3.eth.getBalance(address);
+    const balance2 = await web3.eth.getBalance(address);
 
     const expected = new BigNumber(balance1).add(increase);
-    const actual = new BigNumber(balance8);
+    const actual = new BigNumber(balance2);
 
     if (delta === 0) {
       assert(expected.equal(actual), `Expected ${expected.toExponential(8)} but got ${actual.toExponential(8)}`)

@@ -2,7 +2,6 @@ pragma solidity ^0.4.24;
 
 
 contract Stamina {
-  // Withdrawal handles withdrawal request
   struct Withdrawal {
     uint128 amount;
     uint128 requestBlockNumber;
@@ -51,7 +50,6 @@ contract Stamina {
 
   bool public development = true;   // if the contract is inserted directly into
                                     // genesis block, it will be false
-
 
   /**
    * Modifiers
@@ -211,7 +209,7 @@ contract Stamina {
     _total_deposit[delegatee] = totalDeposit - amount;
     _deposit[msg.sender][delegatee] = deposit - amount;
 
-    // NOTE: Is accepting the request right when stamina < amount?
+    // NOTE: Is it right to accept the request when stamina < amount?
     if (stamina > amount) {
       _stamina[delegatee] = stamina - amount;
     } else {
@@ -249,7 +247,7 @@ contract Stamina {
       withdrawalIndex = lastWithdrawalIndex + 1;
     }
 
-    // double check out of index
+    // check out of index
     require(withdrawalIndex < withdrawals.length);
 
     Withdrawal storage withdrawal = _withdrawal[msg.sender][withdrawalIndex];
@@ -260,10 +258,8 @@ contract Stamina {
 
     uint amount = uint(withdrawal.amount);
 
-    // withdrawal is processed
+    // update state
     withdrawal.processed = true;
-
-    // mark processed withdrawal index
     _last_processed_withdrawal[msg.sender] = withdrawalIndex;
 
     // tranfser ether to depositor
