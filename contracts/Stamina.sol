@@ -49,7 +49,7 @@ contract Stamina {
 
 
   bool public development = true;   // if the contract is inserted directly into
-                                    // genesis block, it will be false
+                                    // genesis block without state, it will be false
 
   /**
    * Modifiers
@@ -68,9 +68,11 @@ contract Stamina {
    * Events
    */
   event Deposited(address indexed depositor, address indexed delegatee, uint amount);
-  event DelegateeChanged(address delegator, address oldDelegatee, address newDelegatee);
+  event DelegateeChanged(address indexed delegator, address oldDelegatee, address newDelegatee);
   event WithdrawalRequested(address indexed depositor, address indexed delegatee, uint amount, uint requestBlockNumber, uint withdrawalIndex);
   event Withdrawn(address indexed depositor, address indexed delegatee, uint amount, uint withdrawalIndex);
+  event StaminaAdded(address indexed delegatee, uint amount, bool recovered);
+  event StaminaSubtracted(address indexed delegatee, uint amount);
 
   /**
    * Init
@@ -271,7 +273,6 @@ contract Stamina {
 
   /**
    * Stamina modification (only blockchain)
-   * No event emitted during these functions.
    */
   /// @notice Add stamina of delegatee. The upper bound of stamina is total deposit of delegatee.
   ///         addStamina is called when remaining gas is refunded. So we can recover stamina
@@ -283,6 +284,7 @@ contract Stamina {
       _last_recovery_block[delegatee] = block.number;
       _num_recovery[delegatee] += 1;
 
+      emit StaminaAdded(delegatee, 0, true);
       return true;
     }
 
@@ -295,6 +297,7 @@ contract Stamina {
     if (targetBalance > totalDeposit) _stamina[delegatee] = totalDeposit;
     else _stamina[delegatee] = targetBalance;
 
+    emit StaminaAdded(delegatee, amount, false);
     return true;
   }
 
@@ -304,6 +307,8 @@ contract Stamina {
 
     require(stamina - amount < stamina);
     _stamina[delegatee] = stamina - amount;
+
+    emit StaminaSubtracted(delegatee, amount);
     return true;
   }
 }
