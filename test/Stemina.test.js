@@ -36,10 +36,10 @@ contract("Stamina", async (accounts) => {
 
   describe("delegatee", () => {
     it("can set delegatee to anyone", async () => {
-      await stamina.setDelegatee(owner, { from: delegatee });
+      await stamina.setDelegator(owner, { from: delegatee });
       (await stamina.getDelegatee(owner)).should.be.equal(delegatee);
 
-      await stamina.setDelegatee(delegater, { from: delegatee });
+      await stamina.setDelegator(delegater, { from: delegatee });
       (await stamina.getDelegatee(delegater)).should.be.equal(delegatee);
     });
   });

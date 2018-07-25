@@ -141,7 +141,7 @@ contract Stamina {
    * Setters
    */
   /// @notice Set `msg.sender` as delegatee of `delegator`
-  function setDelegatee(address delegator)
+  function setDelegator(address delegator)
     external
     onlyInitialized
     returns (bool)
