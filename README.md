@@ -7,7 +7,8 @@
 // JS & truffle style pseudo code
 
 const Stamina = artifacts.require("Stamina");
-const stamina = stamina.deployed();
+const stamina = Stamina.deployed();
+// or stamina = Stamina.at("0x000000000000000000000000000000000000dead")
 
 const minDeposit = 1e17;
 const recoveryEpochLength = 20;
@@ -24,7 +25,7 @@ stamina.init(minDeposit, recoveryEpochLength, withdrawalDelay);
 stamina.setDelegator(delegator, { from: delegatee });
 
 // 3. deposit Ether to Stamina contract (min deposit = 0.1 ETH)
-stamina.deposit(delegatee, { from: owner, value: minDeposit });
+stamina.deposit(delegatee, { from: delegatee, value: minDeposit });
 
 // 4. pay & refund gas fee with stamina (this step is only possible by moscow chain)
 // After recoveryEpochLength blocks, stamina will be recovered
