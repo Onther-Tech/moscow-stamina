@@ -1,44 +1,28 @@
-# moscow-stamina
+# Stamina: Transaction Fee Delegation
+
+Stamina is a smart contract that can be paid as a transaction fee. And `delegatee` can rent his stamina for `delegator`. If `delegatee` specifies `delegator`, transaction fee that `delegator` have to pay is paid by `deelgator`'s stamina.
+
+Also stamina is generated with the same amount as deposited (P)ETH, and it is recovered in every `RECOVER_EPOCH_LENGTH` blocks.
+
+[Tokamak Network](https://github.com/onther-tech/plasma-evm) implements this transactione execution model. and Stamina contract is deployed at "0xdead" in child chain.
+
+### Methods
+
+##### `setDelegator(delegator)`
+A `delegatee` set `delegator` address.
+
+##### `deposit(address addr) payable`
+Deposit (P)ETH and generate stamina for the `addr`. The amount of stamina is same as the deposited amount of (P)ETH and recovered in every `RECOVER_EPOCH_LENGTH` blocks.
+
+##### `requestWithdrawal(address addr, uint amount)`
+Request an withdrawal for deposited (P)ETH.
+
+##### `requestWithdrawal(address addr, uint amount)`
+Withdraw deposited (P)ETH after `WITHDRAWAL_DELAY` blocks from which withdrawal request created.
 
 
-### Usage
+##### `addStamina(address addr, uint amount)`
+Add stamina for the `addr`. This can be only by null address (`0x00`).
 
-```javascript
-// JS & truffle style pseudo code
-
-const Stamina = artifacts.require("Stamina");
-const stamina = Stamina.deployed();
-// or stamina = Stamina.at("0x000000000000000000000000000000000000dead")
-
-const minDeposit = 1e17;
-const recoveryEpochLength = 20;
-const withdrawalDelay = 50;
-
-const owner = "0x...";
-const delegator = "0x...";
-const delegatee = "0x...";
-
-// 1. initialize stamina contract
-stamina.init(minDeposit, recoveryEpochLength, withdrawalDelay);
-
-// 2. set `delegatee` as a delegatee of `delegator`
-stamina.setDelegator(delegator, { from: delegatee });
-
-// 3. deposit Ether to Stamina contract (min deposit = 0.1 ETH)
-stamina.deposit(delegatee, { from: delegatee, value: minDeposit });
-
-// 4. pay & refund gas fee with stamina (this step is only possible by moscow chain)
-// After recoveryEpochLength blocks, stamina will be recovered
-stamina.subtractStamina(delegatee, 0.5e17, { from: owner });
-stamina.addStamina(delegatee, 0.1e17, { from: owner });
-
-stamina.subtractStamina(delegatee, 0.5e17, { from: owner });
-stamina.addStamina(delegatee, 0.1e17, { from: owner });
-
-// 5. reqeust withdrawal
-stamina.requestWithdrawal(delegatee, 1e17, { from: owner });
-
-// 6. withdraw deposit after withdrawalDelay blocks
-stamina.withdraw({ from: owner });
-
-```
+##### `subtractStamina(address addr, uint amount)`
+Subtract stamina for the `addr`. This can be only by null address (`0x00`).
